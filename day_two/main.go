@@ -15,21 +15,16 @@ func checkCriteria(report []int) int{
     increments := false
     isIncreasing := false
     isDecreasing := false
-
-    //fmt.Printf("Current report: \n")
-    //fmt.Println(report)
     for i := range report{
         if i == 0 {
             continue
         }
 
         if report[i] > report[i-1]{
-     //       fmt.Printf("%d is greater than %d, setting increasing to true\n", report[i], report[i-1])
             isIncreasing = true
         }
 
         if report[i] < report[i-1]{
-      //      fmt.Printf("%d is less than %d, setting decreasing to true\n", report[i], report[i-1])
             isDecreasing = true
         }
 
@@ -39,7 +34,6 @@ func checkCriteria(report []int) int{
             break
         }
 
-        //fmt.Println("checking if increment/decrement is within range 1 to 3")
         if math.Abs(float64(report[i]) - float64(report[i-1])) > 0 && math.Abs(float64(report[i]) - float64(report[i-1])) <= 3{
             increments = true
         }else{
@@ -47,19 +41,18 @@ func checkCriteria(report []int) int{
             break
         }
 
-       // fmt.Printf("Increment within range: %v\n", increments)
     }
 
     if (isDecreasing || isIncreasing) && isIncreasing != isDecreasing && increments{
         isSafe = 1
     }
-
-    //fmt.Printf("Is the report safe: %d\n", isSafe)
     return isSafe
 }
 
+
 func main(){
     var totalSafe int
+    var totalSafeWithProblemDamper int
     currentDir, err := os.Getwd()
     if err != nil{
         fmt.Printf("error: %s", err.Error())
@@ -85,9 +78,33 @@ func main(){
         reports = append(reports, reportNumbers)
     }
 
+    //checks each report to see if it's safe
     for r := range reports{
-        totalSafe += checkCriteria(reports[r])
+        if checkCriteria(reports[r]) == 1{
+            totalSafe += 1
+        }else{
+            //apply problem damper
+            fmt.Printf("Original report: %d\n", reports[r])
+            for j := range len(reports[r]){
+                var test []int
+                if j == 0{
+                    test = append([]int{}, reports[r][j+1:]...)
+                }else{
+                    start := append([]int{}, reports[r][:j]...)
+                    end := append([]int{}, reports[r][j+1:]...)
+                    test = append(start,end...)
+                }
+
+                fmt.Printf("Testing: %d\n", test)
+                if checkCriteria(test) == 1{
+                    totalSafeWithProblemDamper += 1
+                    break
+                }
+            }
+        }
     }
 
-    fmt.Printf("The total number of safe reports is: %d", totalSafe)
+    fmt.Printf("The total number of safe reports is: %d\n", totalSafe)
+    fmt.Printf("The total number of safe reports using the problem damper is: %d\n", totalSafeWithProblemDamper + totalSafe)
+
 }
