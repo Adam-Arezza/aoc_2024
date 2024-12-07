@@ -5,106 +5,97 @@ import (
 	"fmt"
 	"os"
 	"path"
-	"strings"
+    "regexp"
 )
 
 func main() {
+    matrix := readFile("/data.txt")
+    for row := range matrix{
+        fmt.Println(string(matrix[row]))
+    }
+//    PART 1
+//    xmasCount := 0
+//    checkList := [][]int{{-1,-1}, {-1,0},{-1,1},{0,-1},{0,1},{1,-1},{1,0},{1,1},}
+//    target := []byte{'X','M','A','S'}
+//
+//    for i := range len(matrix){
+//        for j := range len(matrix[i]){
+//            if matrix[i][j] == target[0]{
+//               //check directions
+//               for check := range checkList{
+//                   direction := checkList[check]
+//                   if checkDirection(direction, matrix, i, j, target, 1){
+//                       xmasCount += 1
+//                   }else{
+//                       continue
+//                   }
+//               }
+//            }        
+//        }
+//    }
+//    fmt.Printf("The total xmas count is: %d", xmasCount)
+
+
+//  PART 2
+    masCount := 0
+    r, _ := regexp.Compile("MAS|SAM")
+
+    for i := range len(matrix){
+        for j := range len(matrix[i]){
+            if matrix[i][j] == 'A'{
+                test := []byte{matrix[i + -1][j + -1], matrix[i][j], matrix[i + 1][j + 1]}
+                if len(r.FindAllSubmatch(test, -1)) > 0{
+                    test = []byte{matrix[i + -1][j + 1], matrix[i][j], matrix[i + 1][j + -1]}
+                    if len(r.FindAllSubmatch(test, -1)) > 0{
+                        masCount += 1
+                    }
+                }
+            }
+        }
+    }
+    fmt.Printf("The total X-mas count is: %d", masCount)
+
+}
+
+func readFile(file string)[][]byte{
+    var result [][]byte
     currentDir, err := os.Getwd()
     if err != nil{
         fmt.Printf("error: %s", err.Error())
     }
-    dataFile, err := os.Open(path.Join(currentDir,"/test.txt"))
+    dataFile, err := os.Open(path.Join(currentDir,file))
     if err != nil{
         fmt.Printf("error: %s", err.Error())
     }
     fileScanner := bufio.NewScanner(dataFile)
     fileScanner.Split(bufio.ScanLines)
-    var charMatrix [][]string
     for fileScanner.Scan(){
-        row := strings.Split(fileScanner.Text(), "")
-        row = append([]string{"Z"}, row...)
-        row = append(row, "Z")
+        row := append([]byte{'Z'}, []byte(fileScanner.Text())...)
+        row = append(row, 'Z')
         //fmt.Println(row)
-        charMatrix = append(charMatrix, row)
+        result = append(result, row)
         //fmt.Println(string(fileScanner.Text()[0]))
     }
-
-    //add buffer to matrix
-    padRow := make([]string, len(charMatrix[0]))
+    padRow := make([]byte, len(result[0]))
     for i := range padRow{
-        padRow[i] = string("Z")
+        padRow[i] = 'Z'
     }
-
-    charMatrix = append([][]string{padRow},charMatrix...)
-    charMatrix = append(charMatrix, padRow)
-    for row := range charMatrix{
-        fmt.Println(charMatrix[row])
-    }
-
-    //fmt.Print("Final matrix: \n")
-    xmasCount := 0
-    for i := range len(charMatrix){
-        for j := range len(charMatrix[i]){
-            if charMatrix[i][j] == string("X"){
-                if checkAdjacentCells(i,j,charMatrix, string("M")){
-                    xmasCount += 1
-                }
-            }else{
-                continue
-            }
-        }
-    }
-    fmt.Printf("The total xmas count is: %d", xmasCount)
+    result = append([][]byte{padRow},result...)
+    result = append(result, padRow)
+    return result
 }
 
-func checkAdjacentCells(i,j int, mat [][]string, target string) bool{
-    checkList := [][]int{
-                         {-1,-1}, 
-                         {-1,0},
-                         {-1,1},
-                         {0,-1},
-                         {0,1},
-                         {1,-1},
-                         {1,0},
-                         {1,1},
-                        }
-    fmt.Printf("Searching around X at position: %d, %d\n", i, j)
-    for coords := range checkList{
-        fmt.Printf("looking around X, currently checking: %d\n", checkList[coords])
-        checkRow := i + checkList[coords][0]
-        checkCol := j + checkList[coords][1]
-        fmt.Printf("found: %s\n", mat[checkRow][checkCol])
-        if mat[checkRow][checkCol] == target{
-            fmt.Println("Found M, looking for A now...")
-            target = "A"
-            if checkDirection(mat, checkRow, checkCol, target, checkList[coords]){
-                fmt.Println("Found XMAS")
-                return true 
-            }else{
-                target = "M"
-                continue
-            }
-        }
-    }
-    return false
-}
-
-func checkDirection(mat [][]string, i int, j int, target string, direction []int) bool{
+func checkDirection(direction []int, mat [][]byte, i int, j int, target []byte, targetIdx int)bool{
     directionRow := i + direction[0]
     directionCol := j + direction[1]
-    if mat[directionRow][directionCol] == target{
-        if target == "S"{
-            fmt.Println("Found S")
-            return true
-        }
-
-        if target == "A"{
-            fmt.Println("Found A, looking for S now...")
-            target = "S"
-            return checkDirection(mat, directionRow, directionCol, target, direction)
-        }
-    }else{
-        fmt.Printf("Couldn't find target: %s\n", target)
+    if mat[directionRow][directionCol] == target[targetIdx] && targetIdx < len(target)-1{
+        targetIdx += 1
+        return checkDirection(direction, mat, directionRow, directionCol, target, targetIdx)
     }
+
+    if mat[directionRow][directionCol] == target[targetIdx] && targetIdx == len(target) -1{
+        return true
+    }
+
     return false
 }
